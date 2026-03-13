@@ -24,6 +24,6 @@ export function getImageUrlForShip(
 	{ size }: { size: number },
 ) {
 	console.log(`getImageUrlForShip() called`)
-
+	
 	return `/img/ships/${shipName.toLowerCase().replaceAll(' ', '-')}.webp?size=${size}`
 }

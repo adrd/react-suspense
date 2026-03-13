@@ -1,13 +1,12 @@
 import { Suspense } from 'react'
 import * as ReactDOM from 'react-dom/client'
-import {
-	getImageUrlForShip,
-	getShip,
-	// 💰 you're gonna want this
-	type Ship
-} from './utils.tsx'
+// 💰 you're gonna want this
+// (unless you want to implement your own error boundary from scratch! 😅)
+import { ErrorBoundary } from 'react-error-boundary'
+import { getImageUrlForShip, getShip, type Ship } from './utils.tsx'
 
-const shipName = 'Dreadnought'
+// 🐨 change this to a ship that doesn't exist (like 'Dreadyacht' 😆)
+const shipName = 'Dreadyacht'
 
 function App() {
 	console.log(`App component logic start`)
@@ -18,27 +17,35 @@ function App() {
 		<div className="app-wrapper">
 			<div className="app">
 				<div className="details">
-					{/* 🐨 add a Suspense component here with the fallback set to <ShipFallback /> */}
-					<Suspense fallback={<ShipFallback/>}>
-						<ShipDetails />
-					</Suspense>
+					{/* 🐨 wrap this in an ErrorBoundary */}
+					{/* 💰 you can use the ShipError component below as the fallback prop */}
+					<ErrorBoundary fallback={<ShipError/>}>
+						<Suspense fallback={<ShipFallback />}>
+							<ShipDetails />
+						</Suspense>
+					</ErrorBoundary>
 				</div>
 			</div>
 		</div>
 	)
 }
 
-// 🐨 create a new ship variable that's a Ship
 let ship: Ship
-// 🐨 rename this to shipPromise and remove the `await`
-// 🐨 add a .then on the shipPromise that assigns the ship to the resolved value
-const shipPromise = getShip(shipName, 2000)
-						.then(s => ship = s)
+let error: unknown
+// 🐨 create an error variable here
+const shipPromise = getShip(shipName).then(
+	result => (ship = result),
+	// 🐨 add an error handler here to assign the error to
+	err => (error = err)
+)
 
 function ShipDetails() {
-	console.log(`ShipDetails logic start`)
+	console.log(`ShipDetails component logic start`)
 
-	// 🐨 if the ship hasn't loaded yet, throw the shipPromise
+	// 🐨 if there was an error, throw it.
+	if (error)
+		throw error
+
 	if (!ship) 
 		throw shipPromise
 
@@ -82,6 +89,10 @@ function ShipDetails() {
 }
 
 function ShipFallback() {
+	console.log(`ShipFallback component logic start`)
+
+	console.log(`ShipFallback component rendering`)
+
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
@@ -107,6 +118,25 @@ function ShipFallback() {
 					))}
 				</ul>
 			</section>
+		</div>
+	)
+}
+
+// 🧝‍♂️ here you go!
+function ShipError() {
+	console.log(`ShipError component logic start`)
+
+	console.log(`ShipError component rendering`)
+
+	return (
+		<div className="ship-info">
+			<div className="ship-info__img-wrapper">
+				<img src="/img/broken-ship.webp" alt="broken ship" />
+			</div>
+			<section>
+				<h2>There was an error</h2>
+			</section>
+			<section>There was an error loading "{shipName}"</section>
 		</div>
 	)
 }
