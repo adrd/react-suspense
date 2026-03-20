@@ -1,11 +1,22 @@
-# Error Handling
+# Formal Status
 
-<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/error-handling" />
+<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/formal-status" />
 
-👨‍💼 If the user has a bad network connection or something we want to handle that
-error case gracefully. Please wrap the `ShipDetails` in an `ErrorBoundary` from
-`react-error-boundary`.
+👨‍💼 Let's clean up things a little bit with what we've built so far by making the
+status of our promise a little more formal.
 
-You can test this out by changing the `shipName` to a ship that doesn't exist.
-We also have a good fallback for you to use that 🧝‍♂️ Kellie made called
-`ShipError`. Good luck!
+What we have now is:
+
+- if there's an error, throw it
+- if there's no ship, throw the promise
+- render the ship
+
+But that's not exactly clear.
+
+So instead, let's add a `status` variable that can be
+`'pending' | 'fulfilled' | 'rejected'` (start it out with `'pending'`).
+
+📜 To learn more about why this is important, read
+[Make Impossible States Impossible](https://kentcdodds.com/blog/make-impossible-states-impossible)
+and
+[Stop using isLoading booleans](https://kentcdodds.com/blog/stop-using-isloading-booleans)
