@@ -1,55 +1,19 @@
-import { Suspense } from 'react'
+import {
+	Suspense,
+	// 🐨 bring in use from react
+	use
+} from 'react'
 import * as ReactDOM from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
-import { getImageUrlForShip, getShip, type Ship } from './utils.tsx'
+import { getImageUrlForShip, getShip } from './utils.tsx'
 
-// 💰 this will help your TypeScript be nicer:
-type UsePromise<Value> = Promise<Value> & {
-	status: 'pending' | 'fulfilled' | 'rejected'
-	value: Value
-	reason: unknown
-}
+// 💣 delete this
 
-// 🐨 create a function called "use" which accepts a promise and here's what it should do:
-// - assign the promise to a variable called "usePromise" as a UsePromise
-// - if the usePromise.status is fuilfilled, return usePromise.value
-// - if the usePromise.status is rejected, throw usePromise.reason
-// - if the usePromise.status is pending, throw usePromise
-// - otherwise, set usePromise.status to 'pending' and then add a .then to the promise
-//   - if the promise resolves, set usePromise.status to 'fulfilled' and set usePromise.value to the result
-//   - if the promise rejects, set usePromise.status to 'rejected' and set usePromise.reason to the rejection reason
-//   - then throw usePromise
-function use<Value>(promise: Promise<Value>): Value {
-	console.log(`use hook called`)
-	
-	const usePromise = promise as UsePromise<Value>; 
-	
-	console.log(`usePromise.status = `, usePromise.status)
+// 💣 delete this
 
-	if (usePromise.status === 'fulfilled')
-		return usePromise.value
-	if (usePromise.status === 'rejected')
-		throw usePromise.reason
-	if (usePromise.status === 'pending')
-		throw usePromise
-
-	usePromise.status = 'pending'
-
-	usePromise.then(result => {
-		usePromise.status = 'fulfilled'
-		usePromise.value = result
-	},
-	reason => {
-		usePromise.status = 'rejected'
-		usePromise.reason = reason
-	})
-
-	throw usePromise
-}
-
-// const shipName = 'Dreadnought'
+const shipName = 'Dreadnought'
 // 🚨 If you want to to test out the error state, change this to 'Dreadyacht'
-const shipName = 'Dreadyacht'
+// const shipName = 'Dreadyacht'
 
 function App() {
 	console.log(`App component logic start`)
@@ -71,13 +35,14 @@ function App() {
 	)
 }
 
-// 💣 get rid of the ship, error, and status variables
 const shipPromise = getShip(shipName)
 
 function ShipDetails() {
-	// 💣 get rid of these if statements
-	// 🐨 create a ship variable that's set to use(shipPromise)
+	console.log(`ShipDetails logic start`)
+
 	const ship = use(shipPromise)
+	
+	console.log(`ShipDetails component rendering`)
 
 	return (
 		<div className="ship-info">
@@ -154,7 +119,7 @@ function ShipError() {
 	console.log(`ShipError component logic start`)
 
 	console.log(`ShipError component rendering`)
-	
+
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
