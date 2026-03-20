@@ -1,32 +1,33 @@
-import {
-	Suspense,
-	// 🐨 bring in use from react
-	use
-} from 'react'
+import { Suspense, use, useState } from 'react'
 import * as ReactDOM from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
 import { getImageUrlForShip, getShip } from './utils.tsx'
 
-// 💣 delete this
-
-// 💣 delete this
-
-const shipName = 'Dreadnought'
-// 🚨 If you want to to test out the error state, change this to 'Dreadyacht'
-// const shipName = 'Dreadyacht'
-
 function App() {
 	console.log(`App component logic start`)
+
+	const [count, setCount] = useState(0)
+	const [shipName, setShipName] = useState('Dreadnought')
+
+	function handleShipSelection(newShipName: string) {
+		console.log('handleShipSelection() called')
+		
+		setShipName(newShipName)
+	}
 
 	console.log(`App component rendering`)
 
 	return (
 		<div className="app-wrapper">
+			<button onClick={() => setCount((c) => c + 1)}>
+				Click to re-render: {count}
+			</button>
+			<ShipButtons shipName={shipName} onShipSelect={handleShipSelection} />
 			<div className="app">
 				<div className="details">
-					<ErrorBoundary fallback={<ShipError />}>
-						<Suspense fallback={<ShipFallback />}>
-							<ShipDetails />
+					<ErrorBoundary fallback={<ShipError shipName={shipName} />}>
+						<Suspense fallback={<ShipFallback shipName={shipName} />}>
+							<ShipDetails shipName={shipName} />
 						</Suspense>
 					</ErrorBoundary>
 				</div>
@@ -35,13 +36,39 @@ function App() {
 	)
 }
 
-const shipPromise = getShip(shipName)
+function ShipButtons({
+	shipName,
+	onShipSelect,
+}: {
+	shipName: string
+	onShipSelect: (shipName: string) => void
+}) {
+	console.log(`ShipButtons component logic start`)
 
-function ShipDetails() {
-	console.log(`ShipDetails logic start`)
-
-	const ship = use(shipPromise)
+	const ships = ['Dreadnought', 'Interceptor', 'Galaxy Cruiser']
 	
+	console.log(`ShipButtons component rendering`)
+
+	return (
+		<div className="ship-buttons">
+			{ships.map((ship) => (
+				<button
+					key={ship}
+					onClick={() => onShipSelect(ship)}
+					className={shipName === ship ? 'active' : ''}
+				>
+					{ship}
+				</button>
+			))}
+		</div>
+	)
+}
+
+function ShipDetails({ shipName }: { shipName: string }) {
+	console.log(`ShipDetails logic start`)
+	
+	const ship = use(getShip(shipName))
+
 	console.log(`ShipDetails component rendering`)
 
 	return (
@@ -81,7 +108,7 @@ function ShipDetails() {
 	)
 }
 
-function ShipFallback() {
+function ShipFallback({ shipName }: { shipName: string }) {
 	console.log(`ShipFallback component logic start`)
 
 	console.log(`ShipFallback component rendering`)
@@ -115,7 +142,7 @@ function ShipFallback() {
 	)
 }
 
-function ShipError() {
+function ShipError({ shipName }: { shipName: string }) {
 	console.log(`ShipError component logic start`)
 
 	console.log(`ShipError component rendering`)
