@@ -1,22 +1,23 @@
 import { Suspense, use, useState, useTransition } from 'react'
 import * as ReactDOM from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
+// 💰 you're gonna want this:
+import { useSpinDelay } from 'spin-delay'
 import { getImageUrlForShip, getShip } from './utils.tsx'
 
 function App() {
 	console.log(`App component logic start`)
 
 	const [shipName, setShipName] = useState('Dreadnought')
-	// 🐨 call useTransition here to get the isPending boolean and startTransition function
-	const [isPending, startTransition] = useTransition()
+	// 🐨 rename this to isTransitionPending
+	const [isTransitionPending, startTransition] = useTransition()
+	// 🐨 create an isPending based on what you get back from useSpinDelay
+	const isPending = useSpinDelay(isTransitionPending, { delay: 300, minDuration: 350 })
 
 	function handleShipSelection(newShipName: string) {
-		console.log(`handleShipSelection called`)
+		console.log('cb startTransition called')
 
-		// 🐨 wrap setShipName in startTransition
 		startTransition(() => {
-			console.log('cb startTransition called')
-
 			setShipName(newShipName)
 		})
 	}
@@ -27,8 +28,7 @@ function App() {
 		<div className="app-wrapper">
 			<ShipButtons shipName={shipName} onShipSelect={handleShipSelection} />
 			<div className="app">
-				{/* 🐨 add inline styles to set the opacity to 0.6 if we're pending */}
-				<div className="details" style={ {opacity: isPending ? 0.6 : 1} }>
+				<div className="details" style={{ opacity: isPending ? 0.6 : 1 }}>
 					<ErrorBoundary fallback={<ShipError shipName={shipName} />}>
 						<Suspense fallback={<ShipFallback shipName={shipName} />}>
 							<ShipDetails shipName={shipName} />
@@ -71,8 +71,11 @@ function ShipButtons({
 function ShipDetails({ shipName }: { shipName: string }) {
 	console.log(`ShipDetails logic start`)
 	
-	const ship = use(getShip(shipName, 2000))
-
+	// 💯 Set different delays for different ships. Feel free to play around with the values.
+	const delay = shipName === 'Interceptor' ? 200 : shipName === 'Galaxy Cruiser' ? 400 : 10
+	
+	const ship = use(getShip(shipName, delay))
+	
 	console.log(`ShipDetails component rendering`)
 
 	return (

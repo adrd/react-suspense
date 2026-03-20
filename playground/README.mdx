@@ -1,32 +1,52 @@
-# useTransition
+# Pending Flash
 
-<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/usetransition" />
+<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/pending-flash" />
 
-👨‍💼 Whenever we change the ship, our component suspends. But this is annoying to
-our users who are on reasonably fast internet connections because it means they
-see a loading spinner every time they change the ship when it really would be a
-better experience to have a more subtle pending state when the ship changes.
+👨‍💼 When the user's on a reasonably fast connection, getting the ship data
+doesn't take very long and as a result the loading state doesn't show up for all
+that long. This is great, except it results in a flash of the loading state
+while the ship takes ~50ms to load. It's jarring for the user and it would be
+better if we could avoid it.
 
-So what we want is to keep the old UI around while the new UI is being worked
-on (and display it in a way that makes it look like it's loading). This is what
-`useTransition` is for! While React keeps the old UI around, it gives us a
-`isPending` state that we can use to show a loading spinner or something else
-while the new UI is loading:
+We thought about adding a CSS delay of 300ms on the opacity transition, but that
+would just mean the flash of loading state happens for people for whom the data
+loading takes 350ms or so. Just moving the problem 🤷‍♂️
 
-```tsx
-const [isPending, startTransition] = useTransition()
+What we really need is something that can give us the following experience:
 
-function handleSomeEvent() {
-	startTransition(() => {
-		// This state change triggers a component to suspend, so we wrap it in a
-		// `startTransition` call to keep the old UI around until the new UI is ready.
-		setSomeState(newState)
-	})
+- If the loading takes less than 300ms, don't show a loading spinner at all.
+- If the loading takes longer than 300ms, show a loading spinner for at least
+  350ms. Even if the loading is shorter than 300ms + 350ms.
+
+This way, if the user has a reasonably fast connection, they won't see a loading
+state at all, and if they have a medium fast connection, they'll be guaranteed
+to not get a flash of loading state because the loading state will show up for
+at least 350ms.
+
+Luckily, there's a simple package that does exactly this:
+[`spin-delay`](https://npm.im/spin-delay). Here's an example:
+
+```tsx lines=1,8
+import { useSpinDelay } from 'spin-delay'
+
+function MyComponent() {
+	const data = use(somePromise)
+	const [isPending, startTransition] = useTransition()
+
+	// options are optional, and default to these values
+	const showSpinner = useSpinDelay(isPending, { delay: 500, minDuration: 200 })
+
+	if (showSpinner) {
+		return <Spinner />
+	}
+
+	// ...
 }
 ```
 
-Our designer just told us to use a `0.6` `opacity` setting while the ship is
-changing (for now). We can use the `useTransition` hook to accomplish this.
+So let's add this with a `delay` of `300` and a `minDuration` of `350` to the
+`Ship` component.
 
-So wrap the state update in a transition and add opacity to the details so we
-can give our users a better experience!
+To test this experience out, you can update the `getShip` call with a second
+argument which is a `delay` that will ensure the request takes at least that
+amount of time (it's not super precise, but it should give you an idea).
