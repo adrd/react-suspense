@@ -1,22 +1,30 @@
-# Formal Status
+# Utility
 
-<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/formal-status" />
+<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/utility" />
 
-👨‍💼 Let's clean up things a little bit with what we've built so far by making the
-status of our promise a little more formal.
+👨‍💼 With what you've built so far, we want you to make a reusable utility for
+this use case. We want you to call it `use` and it should take a promise and
+return the `Value` from the promise.
 
-What we have now is:
+The only way we can do this is by tracking some values which we'll monkey-patch
+onto the `promise` itself. So Kellie's added a special type for you to use to
+make TypeScript happier with the hackery we plan to perform for this simplified
+version of `use`.
 
-- if there's an error, throw it
-- if there's no ship, throw the promise
-- render the ship
+🧝‍♂️ Here's a good start for you:
 
-But that's not exactly clear.
+```tsx
+type UsePromise<Value> = Promise<Value> & {
+	status: 'pending' | 'fulfilled' | 'rejected'
+	value: Value
+	reason: unknown
+}
 
-So instead, let's add a `status` variable that can be
-`'pending' | 'fulfilled' | 'rejected'` (start it out with `'pending'`).
+function use<Value>(promise: Promise<Value>): Value {
+	const usePromise = promise as UsePromise<Value>
+	// throw stuff, .then stuff, and return Value!
+}
+```
 
-📜 To learn more about why this is important, read
-[Make Impossible States Impossible](https://kentcdodds.com/blog/make-impossible-states-impossible)
-and
-[Stop using isLoading booleans](https://kentcdodds.com/blog/stop-using-isloading-booleans)
+That should get you a good start. When you're done, you should be able to remove
+a bunch of our code and replace it with a `use` call. Good luck!
