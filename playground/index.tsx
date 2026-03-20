@@ -1,4 +1,4 @@
-import { Suspense, use, useState } from 'react'
+import { Suspense, use, useState, useTransition } from 'react'
 import * as ReactDOM from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
 import { getImageUrlForShip, getShip } from './utils.tsx'
@@ -6,25 +6,29 @@ import { getImageUrlForShip, getShip } from './utils.tsx'
 function App() {
 	console.log(`App component logic start`)
 
-	const [count, setCount] = useState(0)
 	const [shipName, setShipName] = useState('Dreadnought')
+	// 🐨 call useTransition here to get the isPending boolean and startTransition function
+	const [isPending, startTransition] = useTransition()
 
 	function handleShipSelection(newShipName: string) {
-		console.log('handleShipSelection() called')
-		
-		setShipName(newShipName)
+		console.log(`handleShipSelection called`)
+
+		// 🐨 wrap setShipName in startTransition
+		startTransition(() => {
+			console.log('cb startTransition called')
+
+			setShipName(newShipName)
+		})
 	}
 
 	console.log(`App component rendering`)
 
 	return (
 		<div className="app-wrapper">
-			<button onClick={() => setCount((c) => c + 1)}>
-				Click to re-render: {count}
-			</button>
 			<ShipButtons shipName={shipName} onShipSelect={handleShipSelection} />
 			<div className="app">
-				<div className="details">
+				{/* 🐨 add inline styles to set the opacity to 0.6 if we're pending */}
+				<div className="details" style={ {opacity: isPending ? 0.6 : 1} }>
 					<ErrorBoundary fallback={<ShipError shipName={shipName} />}>
 						<Suspense fallback={<ShipFallback shipName={shipName} />}>
 							<ShipDetails shipName={shipName} />
@@ -46,7 +50,7 @@ function ShipButtons({
 	console.log(`ShipButtons component logic start`)
 
 	const ships = ['Dreadnought', 'Interceptor', 'Galaxy Cruiser']
-	
+
 	console.log(`ShipButtons component rendering`)
 
 	return (
@@ -67,7 +71,7 @@ function ShipButtons({
 function ShipDetails({ shipName }: { shipName: string }) {
 	console.log(`ShipDetails logic start`)
 	
-	const ship = use(getShip(shipName))
+	const ship = use(getShip(shipName, 2000))
 
 	console.log(`ShipDetails component rendering`)
 

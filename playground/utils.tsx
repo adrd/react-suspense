@@ -2,14 +2,7 @@ import { type Ship } from './api.server.ts'
 
 export type { Ship }
 
-// 🐨 create a shipCache Map that's got string keys and values are Promise<Ship>
 const shipCache = new Map<string, Promise<Ship>>()
-
-// 🐨 export a new function called getShip (you'll rename the one below).
-//   - it should take a name and optional delay number
-//   - it should check the shipCache for the shipPromise by the name
-//   - if it can't find one, it should call getShipImpl and store the promise in the cache
-//   - then it should return the shipPromise
 
 export function getShip(name: string, delay?: number) {
 	console.log(`getShip() called`)
@@ -21,7 +14,6 @@ export function getShip(name: string, delay?: number) {
 	return shipPromise
 }
 
-// 🐨 rename this function to getShipImpl and remove the export
 async function getShipImpl(name: string, delay?: number) {
 	console.log(`getShipImpl() called`)
 

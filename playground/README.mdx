@@ -1,32 +1,32 @@
-# Promise Cache
+# useTransition
 
-<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/promise-cache" />
+<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/usetransition" />
 
-🧝‍♂️ I've made a <PrevDiffLink>couple of changes</PrevDiffLink>. I moved the
-`getShip` call into the component itself so we can dynamically change which ship
-we're looking at. I also added some buttons to allow us to do this from the UI.
+👨‍💼 Whenever we change the ship, our component suspends. But this is annoying to
+our users who are on reasonably fast internet connections because it means they
+see a loading spinner every time they change the ship when it really would be a
+better experience to have a more subtle pending state when the ship changes.
 
-But we've got a problem, and I've added a counter button to the UI so you can
-reproduce the problem. Every time you click it, we're suspending again 😱 This
-is because we don't have caching on our `getShip` function so every render
-triggers a new fetch call.
+So what we want is to keep the old UI around while the new UI is being worked
+on (and display it in a way that makes it look like it's loading). This is what
+`useTransition` is for! While React keeps the old UI around, it gives us a
+`isPending` state that we can use to show a loading spinner or something else
+while the new UI is loading:
 
-👨‍💼 Yeah, this is far from optimal for our application. Could you add a little
-cache for our `getShip` function so when it's called with the same ship name it
-doesn't request the ship again and suspend?
+```tsx
+const [isPending, startTransition] = useTransition()
 
-When you're finished, you should be able to click the counter button as many
-times as you like without suspending. Additionally, because of the cache, once
-you've fetched the details for a ship, you should be able to switch back and
-forth and it should be instant.
+function handleSomeEvent() {
+	startTransition(() => {
+		// This state change triggers a component to suspend, so we wrap it in a
+		// `startTransition` call to keep the old UI around until the new UI is ready.
+		setSomeState(newState)
+	})
+}
+```
 
-<callout-info>
-	If you want to reset the cache while you're working on this, simply refresh
-	the page. We're not going to get into cache invalidation in this workshop.
-</callout-info>
+Our designer just told us to use a `0.6` `opacity` setting while the ship is
+changing (for now). We can use the `useTransition` hook to accomplish this.
 
-<callout-success>
-	The slightly inaccurate warning talked about in the video is no longer present
-	in the latest version of React. Instead the requests will just continue for an
-	infinite loop! This step will fix the infinite requests.
-</callout-success>
+So wrap the state update in a transition and add opacity to the details so we
+can give our users a better experience!
