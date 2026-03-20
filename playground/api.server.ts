@@ -1,4 +1,4 @@
-import { getShip, searchShips } from '#shared/ship-api-utils.server'
+import { getShip, searchShips, createShip } from '#shared/ship-api-utils.server'
 
 export type Ship = Awaited<ReturnType<typeof getShip>>
 export type ShipSearch = Awaited<ReturnType<typeof searchShips>>
@@ -30,6 +30,21 @@ export async function loader({
 		}
 		default: {
 			return new Response('Not found', { status: 404 })
+		}
+	}
+}
+
+export async function action({
+	request,
+	params,
+}: {
+	request: Request
+	params: Record<string, string>
+}) {
+	const path = params['*']
+	switch (path) {
+		case 'create-ship': {
+			return createShip(request)
 		}
 	}
 }
