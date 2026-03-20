@@ -3,17 +3,12 @@ import { type Ship } from './api.server.ts'
 export type { Ship }
 
 export async function createShip(formData: FormData, delay?: number) {
-	console.log(`createShip() called`)
-
 	const searchParams = new URLSearchParams()
-	
 	if (delay) searchParams.set('delay', String(delay))
-	
-		const r = await fetch(`api/create-ship?${searchParams.toString()}`, {
+	const r = await fetch(`api/create-ship?${searchParams.toString()}`, {
 		method: 'POST',
 		body: formData,
 	})
-	
 	if (!r.ok) {
 		throw new Error(await r.text())
 	}

@@ -2,12 +2,8 @@ import { Suspense, use, useOptimistic, useState, useTransition } from 'react'
 import * as ReactDOM from 'react-dom/client'
 import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
 import { useSpinDelay } from 'spin-delay'
-import {
-	// 💰 you're going to want this
-	type Ship,
-	getShip,
-	createShip,
-} from './utils.tsx'
+import { type Ship, getShip, createShip } from './utils.tsx'
+import { useFormStatus } from 'react-dom'
 
 function App() {
 	console.log(`App component logic start`)
@@ -18,13 +14,11 @@ function App() {
 		delay: 300,
 		minDuration: 350,
 	})
-	// 🐨 add a useOptimistic call here
-	// 🦺 The type should be a Ship | null, (initialized to null)
 	const [optimisticShip, setOptimisticShip] = useOptimistic<Ship | null>(null)
 
 	function handleShipSelection(newShipName: string) {
 		console.log('cb startTransition called')
-
+		
 		startTransition(() => {
 			setShipName(newShipName)
 		})
@@ -39,40 +33,36 @@ function App() {
 				<div className="details" style={{ opacity: isPending ? 0.6 : 1 }}>
 					<ErrorBoundary fallback={<ShipError shipName={shipName} />}>
 						<Suspense fallback={<ShipFallback shipName={shipName} />}>
-							{/* 🐨 pass our optimisticShip to ShipDetails here */}
 							<ShipDetails shipName={shipName} optimisticShip={optimisticShip} />
 						</Suspense>
 					</ErrorBoundary>
 				</div>
 			</div>
-			{/* 🐨 pass the setOptimisticShip function to CreateForm here */}
-			<CreateForm setShipName={setShipName} setOptimisticShip={setOptimisticShip} />
+			<CreateForm
+				setOptimisticShip={setOptimisticShip}
+				setShipName={setShipName}
+			/>
 		</div>
 	)
 }
 
-// 🐨 accept setOptimisticShip here
 function CreateForm({
+	setOptimisticShip,
 	setShipName,
-	setOptimisticShip
 }: {
-	setShipName: (name: string) => void
-	// 🦺 I'll give this one to you
 	setOptimisticShip: (ship: Ship | null) => void
+	setShipName: (name: string) => void
 }) {
 	console.log(`CreateForm logic start`)
 
 	console.log(`CreateForm component rendering`)
-
+	
 	return (
 		<div>
 			<p>Create a new ship</p>
 			<ErrorBoundary FallbackComponent={FormErrorFallback}>
 				<form
 					action={async (formData) => {
-						// 🐨 create an optimistic ship based on the formData
-						// using the createOptimisticShip utility below
-						// 🐨 set the optimistic ship
 						setOptimisticShip(await createOptimisticShip(formData))
 
 						await createShip(formData, 2000)
@@ -98,10 +88,30 @@ function CreateForm({
 							required
 						/>
 					</div>
-					<button type="submit">Create</button>
+					{/* 🐨 create a CreateButton component and move this into it */}
+					<CreateButton/>
 				</form>
 			</ErrorBoundary>
 		</div>
+	)
+}
+
+// 🐨 create a CreateButton component here and get the form's pending state from useFormStatus
+// 🐨 if we're pending, set the button text to "Creating..." if not, it can be "Create"
+function CreateButton() {
+	console.log(`CreateButton logic start`)
+	
+	const formStatus = useFormStatus()
+	console.log(formStatus)
+	
+	const { pending } = formStatus
+	
+	console.log(`CreateButton component rendering`)
+
+	return (
+		<button type="submit" disabled={pending}>
+			{formStatus.pending ? `Creating ${formStatus.data.get('name')}...` : 'Create'}
+		</button>
 	)
 }
 
@@ -162,8 +172,13 @@ function ShipButtons({
 	)
 }
 
-// 🐨 accept an optimisticShip prop here
-function ShipDetails({ shipName, optimisticShip }: { shipName: string, optimisticShip: Ship | null }) {
+function ShipDetails({
+	shipName,
+	optimisticShip,
+}: {
+	shipName: string
+	optimisticShip: Ship | null
+}) {
 	console.log(`ShipDetails component logic start`)
 
 	console.log(`shipName = `, shipName)
@@ -171,9 +186,8 @@ function ShipDetails({ shipName, optimisticShip }: { shipName: string, optimisti
 
 	// 🦉 you can change this delay to control how long loading the resource takes:
 	const delay = 2000
-	// 🐨 if we have an optimisticShip, set the ship to that instead
 	const ship = optimisticShip ?? use(getShip(shipName, delay))
-	
+
 	console.log(`ShipDetails component rendering`)
 
 	return (
