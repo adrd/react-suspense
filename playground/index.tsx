@@ -1,9 +1,8 @@
-import { Suspense, use, useOptimistic, useState, useTransition } from 'react'
-import { useFormStatus } from 'react-dom'
+import { Suspense, use, useState, useTransition } from 'react'
 import * as ReactDOM from 'react-dom/client'
-import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
+import { ErrorBoundary } from 'react-error-boundary'
 import { useSpinDelay } from 'spin-delay'
-import { type Ship, getShip, createShip } from './utils.tsx'
+import { getImageUrlForShip, getShip, imgSrc } from './utils.tsx'
 
 function App() {
 	console.log(`App component logic start`)
@@ -14,12 +13,13 @@ function App() {
 		delay: 300,
 		minDuration: 350,
 	})
-	const [optimisticShip, setOptimisticShip] = useOptimistic<Ship | null>(null)
 
 	function handleShipSelection(newShipName: string) {
-		console.log('cb startTransition called')
-
+		console.log('handleShipSelection called')
+		
 		startTransition(() => {
+			console.log('startTransition called')
+
 			setShipName(newShipName)
 		})
 	}
@@ -33,130 +33,11 @@ function App() {
 				<div className="details" style={{ opacity: isPending ? 0.6 : 1 }}>
 					<ErrorBoundary fallback={<ShipError shipName={shipName} />}>
 						<Suspense fallback={<ShipFallback shipName={shipName} />}>
-							<ShipDetails shipName={shipName} optimisticShip={optimisticShip} />
+							<ShipDetails shipName={shipName} />
 						</Suspense>
 					</ErrorBoundary>
 				</div>
 			</div>
-			<CreateForm
-				setOptimisticShip={setOptimisticShip}
-				setShipName={setShipName}
-			/>
-		</div>
-	)
-}
-
-function CreateForm({
-	setOptimisticShip,
-	setShipName,
-}: {
-	setOptimisticShip: (ship: Ship | null) => void
-	setShipName: (name: string) => void
-}) {
-	console.log(`CreateForm component logic start`)
-
-	// 🐨 call useOptimistic for message and setMessage (initialize to 'Create')
-	const [message, setMessage] = useOptimistic('Create')
-
-	console.log(`CreateForm component rendering`)
-
-	return (
-		<div>
-			<p>Create a new ship</p>
-			<ErrorBoundary FallbackComponent={FormErrorFallback}>
-				<form
-					action={async (formData) => {
-						// 🐨 set the message to "Creating..."
-						setMessage("Creating...");
-
-						console.log(`CreateForm Creating...`)
-						
-						setOptimisticShip(await createOptimisticShip(formData))
-						
-						await createShip(formData, 2000)
-						
-						// 🐨 set the message to "Created! Loading..."
-						setMessage("Created! Loading...")
-						
-						console.log(`CreateForm Created! Loading...`)
-						
-						setShipName(formData.get('name') as string)
-					}}
-				>
-					<div>
-						<label htmlFor="shipName">Ship Name</label>
-						<input id="shipName" type="text" name="name" required />
-					</div>
-					<div>
-						<label htmlFor="topSpeed">Top Speed</label>
-						<input id="topSpeed" type="number" name="topSpeed" required />
-					</div>
-					<div>
-						<label htmlFor="image">Image</label>
-						<input
-							id="image"
-							type="file"
-							name="image"
-							accept="image/*"
-							required
-						/>
-					</div>
-					{/* 🐨 pass the message as children */}
-					<CreateButton>
-						{message}
-					</CreateButton>
-				</form>
-			</ErrorBoundary>
-		</div>
-	)
-}
-
-// 🐨 accept children
-// 🦺 the type for children is React.ReactNode
-function CreateButton({ children }: { children: React.ReactNode }) {
-	console.log(`CreateButton component logic start`)
-
-	const { pending } = useFormStatus()
-
-	console.log(`CreateButton component rendering`)
-	
-	return (
-		<button type="submit" disabled={pending}>
-			{/* 🐨 remove this and put children in its place */}
-			{children}
-		</button>
-	)
-}
-
-async function createOptimisticShip(formData: FormData) {
-	return {
-		name: formData.get('name') as string,
-		topSpeed: Number(formData.get('topSpeed')),
-		image: await fileToDataUrl(formData.get('image') as File),
-		weapons: [],
-		fetchedAt: '...',
-	}
-}
-
-function fileToDataUrl(file: File) {
-	return new Promise<string>((resolve, reject) => {
-		const reader = new FileReader()
-		reader.onload = () => resolve(reader.result as string)
-		reader.onerror = reject
-		reader.readAsDataURL(file)
-	})
-}
-
-function FormErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
-	console.log(`FormErrorFallback logic start`)
-
-	console.log(`FormErrorFallback component rendering`)
-
-	return (
-		<div role="alert">
-			There was an error:{' '}
-			<pre style={{ color: 'red', whiteSpace: 'normal' }}>{error.message}</pre>
-			<button onClick={resetErrorBoundary}>Try again</button>
 		</div>
 	)
 }
@@ -168,7 +49,11 @@ function ShipButtons({
 	shipName: string
 	onShipSelect: (shipName: string) => void
 }) {
+	console.log(`ShipButtons component logic start`)
+
 	const ships = ['Dreadnought', 'Interceptor', 'Galaxy Cruiser']
+
+	console.log(`ShipButtons component rendering`)
 
 	return (
 		<div className="ship-buttons">
@@ -185,28 +70,18 @@ function ShipButtons({
 	)
 }
 
-function ShipDetails({
-	shipName,
-	optimisticShip,
-}: {
-	shipName: string
-	optimisticShip: Ship | null
-}) {
+function ShipDetails({ shipName }: { shipName: string }) {
 	console.log(`ShipDetails component logic start`)
 
-	console.log(`shipName = `, shipName)
-	console.log(`optimisticShip = `, optimisticShip)
-
-	// 🦉 you can change this delay to control how long loading the resource takes:
-	const delay = 2000
-	const ship = optimisticShip ?? use(getShip(shipName, delay))
+	const ship = use(getShip(shipName))
 
 	console.log(`ShipDetails component rendering`)
-
+	
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
-				<img src={ship.image} alt={ship.name} />
+				{/* 🐨 change this to an Img component */}
+				<Img src={getImageUrlForShip(ship.name, { size: 200 })} alt={ship.name}/>
 			</div>
 			<section>
 				<h2>
@@ -238,6 +113,10 @@ function ShipDetails({
 }
 
 function ShipFallback({ shipName }: { shipName: string }) {
+	console.log(`ShipFallback component logic start`)
+
+	console.log(`ShipFallback component rendering`)
+
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
@@ -278,6 +157,22 @@ function ShipError({ shipName }: { shipName: string }) {
 			</section>
 			<section>There was an error loading "{shipName}"</section>
 		</div>
+	)
+}
+
+// 🐨 create an Img component that accepts all the props from an img element
+// 💰 here's the types for your props: React.ComponentProps<'img'>
+//   - reassign the src to use(imgSrc(src)) from ./utils (you'll have to create imgSrc)
+// return an img element with all the props passed to it
+function Img({ src = '', ...props }: React.ComponentProps<'img'>) {
+	console.log(`Img component logic start`)
+
+	src = use(imgSrc(src))
+	
+	console.log(`Img component rendering`)
+
+	return (
+		<img src={src} {...props }/>
 	)
 }
 

@@ -1,30 +1,40 @@
-# Multi-step Actions
+# Img Component
 
-<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/multi-step-actions" />
+<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/img-component" />
 
-👨‍💼 Our submit button changes from "Create" to "Creating..." but our form action
-actually has one more step: loading the newly created ship.
+👨‍💼 Our users have noticed this annoying behavior. Here's how you reproduce it:
 
-We want to update the message of our submit button to indicate which step we're
-on in the process. But updating state during a transition (like that in our form
-action) isn't possible. So we need to use `useOptimistic`. Here's an example of
-how you might do this:
+{/* prettier-ignore */}
+- Set the playground to this exercise
+- <LinkToApp to="/">Open the playground</LinkToApp> (in a separate tab)
+- Open the dev tools
+- Notice that we've added a version query parameter to the images to simulate
+  initial loading. This is why you see a different versions in the URL for
+  each image.
+- [Throttle your network](https://developer.chrome.com/docs/devtools/network/reference#throttling) speed in the dev tools to "Slow 3G"
+- Click a separate ship
 
-```tsx
-<form
-	action={async (formData) => {
-		setMessage('Creating order...')
-		const order = await createOrder(formData)
-		setMessage('Creating payment...')
-		const payment = await createPayment(formData, order)
-		setMessage('Almost done!')
-		await sendThankYou(order, payment)
-	}}
->
-	{/* ...*/}
-</form>
-```
+<callout-warning>
+	🚨 While you're here, make sure you have `Disable cache` *unchecked* in the
+	Network tab of dev tools. Otherwise, the browser will ignore your preloaded
+	image and try to re-fetch it, bypassing your solution.
+</callout-warning>
 
-So please add a `useOptimistic` for a "message" variable which we'll use to
-update the submit button message. You can initialize it to "Create" and then
-update it in each step of our form action.
+You should notice the network loads the data for the ship. While that happens,
+our pending state is shown (great job on that again). Once the data is loaded,
+the component re-renders with the new data (even the `img` `src` gets updated
+properly). However, the `img` is still loading. This is because the browser
+waits for the new image `src` to be loaded before switching to the new image.
+
+Our users are confused by this, and that's what we need you to solve using
+Suspense, the `use` hook, and a `preloadImage` utility.
+
+The emoji will guide you through this one.
+Best to start in <InlineFile file="utils.tsx" />. Lots of this will feel similar
+to what we were doing with the `getShip` regarding the caching stuff!
+
+<callout-warning>
+	🚨 Note, this is extremely difficult to test, so the test may be unreliable.
+	However, if you do throttle the network, then the test will be much more
+	reliable.
+</callout-warning>
