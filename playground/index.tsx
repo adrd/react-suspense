@@ -1,8 +1,10 @@
-import { Suspense, use, useState, useTransition } from 'react'
+import { Suspense, use, useDeferredValue, useState, useTransition } from 'react'
 import * as ReactDOM from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
 import { useSpinDelay } from 'spin-delay'
-import { getImageUrlForShip, getShip, imgSrc } from './utils.tsx'
+import { getImageUrlForShip, getShip, imgSrc, searchShips } from './utils.tsx'
+
+const shipFallbackSrc = '/img/fallback-ship.png'
 
 function App() {
 	console.log(`App component logic start`)
@@ -14,65 +16,155 @@ function App() {
 		minDuration: 350,
 	})
 
-	function handleShipSelection(newShipName: string) {
-		console.log('handleShipSelection called')
-
-		startTransition(() => {
-			console.log('startTransition called')
-
-			setShipName(newShipName)
-		})
-	}
-
 	console.log(`App component rendering`)
 
 	return (
 		<div className="app-wrapper">
-			<ShipButtons shipName={shipName} onShipSelect={handleShipSelection} />
 			<div className="app">
-				<div className="details" style={{ opacity: isPending ? 0.6 : 1 }}>
-					<ErrorBoundary fallback={<ShipError shipName={shipName} />}>
-						<Suspense fallback={<ShipFallback shipName={shipName} />}>
-							<ShipDetails shipName={shipName} />
-						</Suspense>
-					</ErrorBoundary>
-				</div>
+				<ErrorBoundary
+					fallback={
+						<div className="app-error">
+							<p>Something went wrong!</p>
+						</div>
+					}
+				>
+					<Suspense
+						fallback={<img style={{ maxWidth: 400 }} src={shipFallbackSrc} />}
+					>
+						<div className="search">
+							<ShipSearch
+								onSelection={(selection) => {
+									startTransition(() => {
+										console.log(`startTransition() li button clicked`)
+
+										setShipName(selection);
+									})
+								}}
+							/>
+						</div>
+						<div className="details" style={{ opacity: isPending ? 0.6 : 1 }}>
+							<ErrorBoundary fallback={<ShipError shipName={shipName} />}>
+								{shipName ? (
+									<Suspense fallback={<ShipFallback shipName={shipName} />}>
+										<ShipDetails shipName={shipName} />
+									</Suspense>
+								) : (
+									<p>Select a ship from the list to see details</p>
+								)}
+							</ErrorBoundary>
+						</div>
+					</Suspense>
+				</ErrorBoundary>
 			</div>
 		</div>
 	)
 }
 
-function ShipButtons({
-	shipName,
-	onShipSelect,
+function ShipSearch({
+	onSelection,
 }: {
-	shipName: string
-	onShipSelect: (shipName: string) => void
+	onSelection: (shipName: string) => void
 }) {
-	console.log(`ShipButtons component logic start`)
+	console.log(`ShipSearch component logic start`)
 
-	const ships = ['Dreadnought', 'Interceptor', 'Galaxy Cruiser']
+	const [search, setSearch] = useState('')
 
-	console.log(`ShipButtons component rendering`)
+	console.log(`search = ${search}`)
+
+	// 🐨 remove the useTransition
+	// const [isTransitionPending, startTransition] = useTransition()
+	// 🐨 call useDeferredValue with the search
+	const deferredSearch = useDeferredValue(search)
+
+	console.log(`deferredSearch = ${deferredSearch}`)
+
+	// 🐨 update the argument passed to useSpinDelay to be search !== deferredSearch
+	const isPending = useSpinDelay(search !== deferredSearch, {
+		delay: 300,
+		minDuration: 350,
+	})
+
+	console.log(`ShipSearch component rendering`)
 
 	return (
-		<div className="ship-buttons">
-			{ships.map((ship) => (
-				<button
-					key={ship}
-					onClick={() => onShipSelect(ship)}
-					className={shipName === ship ? 'active' : ''}
-				>
-					{ship}
-				</button>
-			))}
-		</div>
+		<>
+			<div>
+				<input
+					placeholder="Filter ships..."
+					type="search"
+					value={search}
+					onChange={(event) => {
+						// 🐨 remove the startTransition wrapper here
+						// startTransition(() =>
+						// {
+							console.log(`onChange() search input called for ${event.currentTarget.value}`)
+							setSearch(event.currentTarget.value)
+						// })
+					}}
+				/>
+			</div>
+			<ErrorBoundary
+				fallback={
+					<div style={{ padding: 6, color: '#CD0DD5' }}>
+						There was an error retrieving results
+					</div>
+				}
+			>
+				<ul style={{ opacity: isPending ? 0.6 : 1 }}>
+					<Suspense fallback={<SearchResultsFallback />}>
+						{/* 🐨 pass the deferredSearch here */}
+						<SearchResults search={deferredSearch} onSelection={onSelection} />
+					</Suspense>
+				</ul>
+			</ErrorBoundary>
+		</>
 	)
+}
+
+function SearchResultsFallback() {
+	console.log(`SearchResultsFallback component logic start`)
+	
+	console.log(`SearchResultsFallback component rendering`)
+
+	return Array.from({ length: 12 }).map((_, i) => (
+		<li key={i}>
+			<button>
+				<img src={shipFallbackSrc} alt="loading" />
+				... loading
+			</button>
+		</li>
+	))
+}
+
+function SearchResults({
+	search,
+	onSelection,
+}: {
+	search: string
+	onSelection: (shipName: string) => void
+}) {
+	console.log(`SearchResults component logic start`)
+	
+	const shipResults = use(searchShips(search))
+
+	console.log(`SearchResults component rendering`)
+
+	return shipResults.ships.map((ship) => (
+		<li key={ship.name}>
+			<button onClick={() => onSelection(ship.name)}>
+				<ShipImg
+					src={getImageUrlForShip(ship.name, { size: 20 })}
+					alt={ship.name}
+				/>
+				{ship.name}
+			</button>
+		</li>
+	))
 }
 
 function ShipDetails({ shipName }: { shipName: string }) {
 	console.log(`ShipDetails component logic start`)
-	
+
 	const ship = use(getShip(shipName))
 
 	console.log(`ShipDetails component rendering`)
@@ -122,7 +214,10 @@ function ShipFallback({ shipName }: { shipName: string }) {
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
-				<img src="/img/fallback-ship.png" alt={shipName} />
+				<ShipImg
+					src={getImageUrlForShip(shipName, { size: 200 })}
+					alt={shipName}
+				/>
 			</div>
 			<section>
 				<h2>
@@ -156,7 +251,7 @@ function ShipError({ shipName }: { shipName: string }) {
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
-				<img src="/img/broken-ship.webp" alt="broken ship" />
+				<ShipImg src="/img/broken-ship.webp" alt="broken ship" />
 			</div>
 			<section>
 				<h2>There was an error</h2>
@@ -174,12 +269,8 @@ function ShipImg(props: React.ComponentProps<'img'>) {
 	console.log(`ShipImg component rendering`)
 
 	return (
-		// 🐨 add a key to this ErrorBoundary. Set it to props.src
-		<ErrorBoundary fallback={<img {...props} key={props.src}/>}>
-			{/* 🐨 wrap this in a Suspense boundary.
-			The fallback should be an <img /> with all the same props (like the
-			ErrorBoundary) except override the src attribute to "/img/fallback-ship.png" */}
-			<Suspense fallback={<img {...props} src="/img/fallback-ship.png"/>}>
+		<ErrorBoundary fallback={<img {...props} />} key={props.src}>
+			<Suspense fallback={<img {...props} src={shipFallbackSrc} />}>
 				<Img {...props} />
 			</Suspense>
 		</ErrorBoundary>
@@ -188,7 +279,7 @@ function ShipImg(props: React.ComponentProps<'img'>) {
 
 function Img({ src = '', ...props }: React.ComponentProps<'img'>) {
 	console.log(`Img component logic start`)
-	
+
 	src = use(imgSrc(src))
 
 	console.log(`Img component rendering`)

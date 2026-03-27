@@ -95,6 +95,7 @@ body {
 
 .details {
 	flex: 1;
+	border-left: 1px solid #000;
 	height: 400px;
 	position: relative;
 	overflow: hidden;

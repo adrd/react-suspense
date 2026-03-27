@@ -1,6 +1,6 @@
-import { type Ship } from './api.server.ts'
+import { type Ship, type ShipSearch } from './api.server.ts'
 
-export type { Ship }
+export type { Ship, ShipSearch }
 
 const shipCache = new Map<string, Promise<Ship>>()
 
@@ -31,6 +31,36 @@ async function getShipImpl(name: string, delay?: number) {
 	return ship as Ship
 }
 
+const shipSearchCache = new Map<string, Promise<ShipSearch>>()
+
+export function searchShips(query: string, delay?: number) {
+	console.log(`searchShips() with query = ${query} called`)
+
+	const searchPromise = shipSearchCache.get(query) ?? searchShipImpl(query, delay)
+	
+	shipSearchCache.set(query, searchPromise)
+	
+	return searchPromise
+}
+
+async function searchShipImpl(query: string, delay?: number) {
+	console.log(`searchShipImpl() with query = ${query} called`)
+
+	const searchParams = new URLSearchParams({ query })
+	
+	if (delay) searchParams.set('delay', String(delay))
+	
+	const response = await fetch(`api/search-ships?${searchParams.toString()}`)
+	
+	if (!response.ok) {
+		return Promise.reject(new Error(await response.text()))
+	}
+	
+	const ship = await response.json()
+	
+	return ship as ShipSearch
+}
+
 const imgCache = new Map<string, Promise<string>>()
 
 export function imgSrc(src: string) {
@@ -54,14 +84,11 @@ function preloadImage(src: string) {
 	})
 }
 
-// added the version to prevent caching to make testing easier
-const version = Date.now()
-
 export function getImageUrlForShip(
 	shipName: string,
 	{ size }: { size: number },
 ) {
 	console.log(`getImageUrlForShip() for ${shipName} called`)
-
-	return `/img/ships/${shipName.toLowerCase().replaceAll(' ', '-')}.webp?size=${size}&version=${version}`
+	
+	return `/img/ships/${shipName.toLowerCase().replaceAll(' ', '-')}.webp?size=${size}`
 }
