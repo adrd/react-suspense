@@ -1,20 +1,104 @@
-# Img Error Boundary
+# Key prop
 
-<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/img-error-boundary" />
+<EpicVideo url="https://www.epicreact.dev/workshops/react-suspense/key-prop-suspense" />
 
-👨‍💼 Sometimes images fail to load for one reason or another. Maybe the URL had
-a typo in it or maybe the user has a spotty network connection. Right now, when
-the image fails to load, we don't show anything to the user at all. We just go
-to the nearest error boundary and show that.
+👨‍💼 Alrighty, we've got a problem that I've been pushing off, but it's time we
+resolve it. We removed confusion for our users by waiting until the image is
+ready before we display the ship's data, but that means our users have to wait
+until the ship's image loads before they can see the ship's data! Ugh, that's
+annoying. Wouldn't it be cool if we could have the best of all worlds:
 
-🧝‍♂️ <PrevDiffLink>I've added</PrevDiffLink> a bit of code to make the image fail
-to load and you'll notice that when that happens, we just fallback to the error
-boundary for the entire component, even though we have some useful information
-that we could show the user.
+- Show the ship's data as soon as it's ready
+- Show the ship's image as soon as it's ready
+- Not show the old ship's image while we're waiting for the new one
 
-👨‍💼 What I'd like you to do is create a `ShipImg` component which renders an
-`ErrorBoundary` around an `Img` component. For the fallback, you can simply
-render a regular `<img />` tag and forward the regular props. This will cause
-the browser to display what it normally does when an image fails to load. Maybe
-one day we'll circle back on this and make a special image to display in this
-case, but for now that will do.
+Well, we can! But it requires a little extra thought. I'm going to have Olivia
+explain something to you about how suspense boundaries work with
+`useTransition`.
+
+🦉 Thanks Peter. Ok, so here's the deal with Suspense boundaries. When one of
+their children suspends, they render the fallback until the suspended child is
+ready to render. That much should be clear from what we've done so far.
+
+When you add `useTransition` and trigger a "suspending state change" from within
+that transition, this will prevent the Suspense boundary from rendering and
+instead will keep the old UI around and give you a pending state to work with so
+you can show a more contextual pending state. That's what we did in the last
+exercise.
+
+To add to this, even when you're using `useTransition`, the suspense fallback
+will show up on the initial render of the Suspense component. This is why you'll
+see the fallback when you load the page initially.
+
+So here's the deal, we need a way to get both a suspense boundary (for the
+image) and a pending state (for the data) at the same time. We can do this by
+adding a Suspense boundary around the image. But that's not quite enough. We
+also need to have React treat the Suspense boundary around the image as if it's
+brand new for every image we render so it doesn't participate in the transition.
+
+To do this, we need to give the Suspense boundary a unique key. This will make
+React treat it as a new boundary every time the key changes and will keep it out
+of the transition.
+
+To make this more clear, here's a walkthrough of what's happening with our
+app right now:
+
+**Initial Render**
+
+1. We render the app
+2. `ShipDetails` calls `use(getShip(shipName))` which suspends
+3. React renders the suspense boundary
+4. The `getShip` promise resolves and React attempts to render the `ShipDetails`
+   again.
+5. `ShipImg` renders `Img` which calls `use(imgSrc(src))` which suspends
+6. React keeps the suspense boundary around
+7. The `imgSrc` promise resolves and React attempts to render the `Img` again
+8. Everything settles.
+
+This all is operating as we'd like for now. It's the transition we want to
+improve:
+
+**Transition**
+
+1. We call `startTransition` to change the `shipName`
+2. React tries to re-render and `ShipDetails` calls `use(getShip(shipName))`
+   which suspends
+3. React keeps the previous state around and gives us the `isPending` state as
+   `true` so we can show a more contextual pending UI (opacity `0.6`).
+4. The `getShip` promise resolves and React attempts to render the `ShipDetails`
+   again.
+5. `ShipImg` renders `Img` which calls `use(imgSrc(src))` which suspends
+6. React keeps the `isPending` state as-is
+7. The `imgSrc` promise resolves and React attempts to render the `Img` again
+8. Everything settles.
+
+Here's how things will work when you're finished with this exercise:
+
+**Improved Transition**
+
+1. We call `startTransition` to change the `shipName`
+2. React tries to re-render and `ShipDetails` calls `use(getShip(shipName))`
+   which suspends
+3. React keeps the previous state around and gives us the `isPending` state as
+   `true` so we can show a more contextual pending UI (opacity `0.6`).
+4. The `getShip` promise resolves and React attempts to render the `ShipDetails`
+   again.
+5. `ShipImg` renders `Img` which calls `use(imgSrc(src))` which suspends
+6. React finds **a brand new suspense boundary** and renders the fallback
+7. The `ShipDetails` renders fine while `ShipImg` shows the fallback
+8. The `imgSrc` promise resolves and React attempts to render the `Img` again
+9. Everything settles.
+
+The key is the step where react finds **a brand new suspense boundary**. This is
+accomplished by using the `key` prop!
+
+👨‍💼 Thank you Olivia!
+
+Great, so now we need you to add a suspense boundary with a `key` prop. It
+generally makes sense to put the `Suspense` boundary inside the `ErrorBoundary`
+(in case the fallback fails the error boundary can handle that as well). In
+addition we can put the `key` prop on the `ErrorBoundary` instead of the
+Suspense boundary as well (since the `ErrorBoundary` is the parent of the
+`Suspense` boundary).
+
+So let's give that a shot!

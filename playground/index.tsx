@@ -72,7 +72,7 @@ function ShipButtons({
 
 function ShipDetails({ shipName }: { shipName: string }) {
 	console.log(`ShipDetails component logic start`)
-
+	
 	const ship = use(getShip(shipName))
 
 	console.log(`ShipDetails component rendering`)
@@ -80,7 +80,6 @@ function ShipDetails({ shipName }: { shipName: string }) {
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
-				{/* 🐨 change this to the ShipImg component */}
 				<ShipImg
 					src={getImageUrlForShip(ship.name, { size: 200 })}
 					alt={ship.name}
@@ -167,10 +166,6 @@ function ShipError({ shipName }: { shipName: string }) {
 	)
 }
 
-// 🐨 create a ShipImg component which accepts all the props of a regular img
-// element (🦺 React.ComponentProps<'img'>) and it should forward all props to
-// the Img component and be wrapped by an ErrorBoundary with the fallback being
-// simply <img {...props} />
 function ShipImg(props: React.ComponentProps<'img'>) {
 	console.log(`ShipImg component logic start`)
 
@@ -179,8 +174,14 @@ function ShipImg(props: React.ComponentProps<'img'>) {
 	console.log(`ShipImg component rendering`)
 
 	return (
-		<ErrorBoundary fallback={<img {...props}/>}>
-			<Img {...props}/>
+		// 🐨 add a key to this ErrorBoundary. Set it to props.src
+		<ErrorBoundary fallback={<img {...props} key={props.src}/>}>
+			{/* 🐨 wrap this in a Suspense boundary.
+			The fallback should be an <img /> with all the same props (like the
+			ErrorBoundary) except override the src attribute to "/img/fallback-ship.png" */}
+			<Suspense fallback={<img {...props} src="/img/fallback-ship.png"/>}>
+				<Img {...props} />
+			</Suspense>
 		</ErrorBoundary>
 	)
 }
@@ -189,7 +190,7 @@ function Img({ src = '', ...props }: React.ComponentProps<'img'>) {
 	console.log(`Img component logic start`)
 	
 	src = use(imgSrc(src))
-	
+
 	console.log(`Img component rendering`)
 
 	return <img src={src} {...props} />
