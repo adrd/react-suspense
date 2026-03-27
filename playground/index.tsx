@@ -1,9 +1,9 @@
 import { Suspense, use, useOptimistic, useState, useTransition } from 'react'
+import { useFormStatus } from 'react-dom'
 import * as ReactDOM from 'react-dom/client'
 import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
 import { useSpinDelay } from 'spin-delay'
 import { type Ship, getShip, createShip } from './utils.tsx'
-import { useFormStatus } from 'react-dom'
 
 function App() {
 	console.log(`App component logic start`)
@@ -18,7 +18,7 @@ function App() {
 
 	function handleShipSelection(newShipName: string) {
 		console.log('cb startTransition called')
-		
+
 		startTransition(() => {
 			setShipName(newShipName)
 		})
@@ -53,20 +53,33 @@ function CreateForm({
 	setOptimisticShip: (ship: Ship | null) => void
 	setShipName: (name: string) => void
 }) {
-	console.log(`CreateForm logic start`)
+	console.log(`CreateForm component logic start`)
+
+	// 🐨 call useOptimistic for message and setMessage (initialize to 'Create')
+	const [message, setMessage] = useOptimistic('Create')
 
 	console.log(`CreateForm component rendering`)
-	
+
 	return (
 		<div>
 			<p>Create a new ship</p>
 			<ErrorBoundary FallbackComponent={FormErrorFallback}>
 				<form
 					action={async (formData) => {
+						// 🐨 set the message to "Creating..."
+						setMessage("Creating...");
+
+						console.log(`CreateForm Creating...`)
+						
 						setOptimisticShip(await createOptimisticShip(formData))
-
+						
 						await createShip(formData, 2000)
-
+						
+						// 🐨 set the message to "Created! Loading..."
+						setMessage("Created! Loading...")
+						
+						console.log(`CreateForm Created! Loading...`)
+						
 						setShipName(formData.get('name') as string)
 					}}
 				>
@@ -88,29 +101,29 @@ function CreateForm({
 							required
 						/>
 					</div>
-					{/* 🐨 create a CreateButton component and move this into it */}
-					<CreateButton/>
+					{/* 🐨 pass the message as children */}
+					<CreateButton>
+						{message}
+					</CreateButton>
 				</form>
 			</ErrorBoundary>
 		</div>
 	)
 }
 
-// 🐨 create a CreateButton component here and get the form's pending state from useFormStatus
-// 🐨 if we're pending, set the button text to "Creating..." if not, it can be "Create"
-function CreateButton() {
-	console.log(`CreateButton logic start`)
-	
-	const formStatus = useFormStatus()
-	console.log(formStatus)
-	
-	const { pending } = formStatus
-	
-	console.log(`CreateButton component rendering`)
+// 🐨 accept children
+// 🦺 the type for children is React.ReactNode
+function CreateButton({ children }: { children: React.ReactNode }) {
+	console.log(`CreateButton component logic start`)
 
+	const { pending } = useFormStatus()
+
+	console.log(`CreateButton component rendering`)
+	
 	return (
 		<button type="submit" disabled={pending}>
-			{formStatus.pending ? `Creating ${formStatus.data.get('name')}...` : 'Create'}
+			{/* 🐨 remove this and put children in its place */}
+			{children}
 		</button>
 	)
 }
@@ -138,7 +151,7 @@ function FormErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
 	console.log(`FormErrorFallback logic start`)
 
 	console.log(`FormErrorFallback component rendering`)
-	
+
 	return (
 		<div role="alert">
 			There was an error:{' '}
