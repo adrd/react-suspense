@@ -31,13 +31,8 @@ async function getShipImpl(name: string, delay?: number) {
 	return ship as Ship
 }
 
-// 🐨 create an imgCache here that's a map of string and Promise<string>
 const imgCache = new Map<string, Promise<string>>()
 
-// 🐨 export a function called imgSrc that takes a src string
-//   - check if there's a imgPromise in the imgCache for the src, if not, create one with preloadImage(src)
-//   - set the imgPromise in the imgCache
-//   - return the imgPromise
 export function imgSrc(src: string) {
 	console.log(`imgSrc() called with src ${src}`)
 
@@ -48,7 +43,6 @@ export function imgSrc(src: string) {
 	return imgPromise
 }
 
-// 💰 here's a function you can use to wait for the image to be ready to display
 function preloadImage(src: string) {
 	console.log(`preloadImage() called with ${src}`)
 
@@ -60,7 +54,6 @@ function preloadImage(src: string) {
 	})
 }
 
-
 // added the version to prevent caching to make testing easier
 const version = Date.now()
 
@@ -70,5 +63,8 @@ export function getImageUrlForShip(
 ) {
 	console.log(`getImageUrlForShip() for ship = ${shipName} called`)
 
-	return `/img/ships/${shipName.toLowerCase().replaceAll(' ', '-')}.webp?size=${size}&v=${version}`
+	// return `/img/ships/${shipName.toLowerCase().replaceAll(' ', '-')}.webp?size=${size}&version=${version}`
+	// 🧝‍♂️ This is just here for us to test what happens when the image fails to load
+	const intentionalTypoUrl = `/img/typo/${shipName.toLowerCase().replaceAll(' ', '-')}.webp?size=${size}&version=${version}`
+	return intentionalTypoUrl
 }

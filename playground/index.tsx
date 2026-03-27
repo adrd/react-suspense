@@ -16,7 +16,7 @@ function App() {
 
 	function handleShipSelection(newShipName: string) {
 		console.log('handleShipSelection called')
-		
+
 		startTransition(() => {
 			console.log('startTransition called')
 
@@ -76,12 +76,15 @@ function ShipDetails({ shipName }: { shipName: string }) {
 	const ship = use(getShip(shipName))
 
 	console.log(`ShipDetails component rendering`)
-	
+
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
-				{/* 🐨 change this to an Img component */}
-				<Img src={getImageUrlForShip(ship.name, { size: 200 })} alt={ship.name}/>
+				{/* 🐨 change this to the ShipImg component */}
+				<ShipImg
+					src={getImageUrlForShip(ship.name, { size: 200 })}
+					alt={ship.name}
+				/>
 			</div>
 			<section>
 				<h2>
@@ -147,6 +150,10 @@ function ShipFallback({ shipName }: { shipName: string }) {
 }
 
 function ShipError({ shipName }: { shipName: string }) {
+	console.log(`ShipError component logic start`)
+
+	console.log(`ShipError component rendering`)
+
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
@@ -160,20 +167,32 @@ function ShipError({ shipName }: { shipName: string }) {
 	)
 }
 
-// 🐨 create an Img component that accepts all the props from an img element
-// 💰 here's the types for your props: React.ComponentProps<'img'>
-//   - reassign the src to use(imgSrc(src)) from ./utils (you'll have to create imgSrc)
-// return an img element with all the props passed to it
+// 🐨 create a ShipImg component which accepts all the props of a regular img
+// element (🦺 React.ComponentProps<'img'>) and it should forward all props to
+// the Img component and be wrapped by an ErrorBoundary with the fallback being
+// simply <img {...props} />
+function ShipImg(props: React.ComponentProps<'img'>) {
+	console.log(`ShipImg component logic start`)
+
+	console.log(`img props = ${JSON.stringify(props, null, 2)}`)
+
+	console.log(`ShipImg component rendering`)
+
+	return (
+		<ErrorBoundary fallback={<img {...props}/>}>
+			<Img {...props}/>
+		</ErrorBoundary>
+	)
+}
+
 function Img({ src = '', ...props }: React.ComponentProps<'img'>) {
 	console.log(`Img component logic start`)
-
+	
 	src = use(imgSrc(src))
 	
 	console.log(`Img component rendering`)
 
-	return (
-		<img src={src} {...props }/>
-	)
+	return <img src={src} {...props} />
 }
 
 const rootEl = document.createElement('div')
