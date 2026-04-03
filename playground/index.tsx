@@ -126,18 +126,11 @@ function SearchResults({
 }
 
 function ShipDetails({ shipName }: { shipName: string }) {
-	console.log(`ShipDetails component logic start`)
-
-	const shipImgSrc = getImageUrlForShip(shipName, { size: 2000 })
+	const shipImgSrc = getImageUrlForShip(shipName, { size: 200 })
+	// 🦉 using "void" so we don't wait for the promise, but also signal to others
+	// that we're intentionally not waiting for this promise
 	void imgSrc(shipImgSrc)
-
-	// 🦉 play with the delay to see how it affects the loading experience
-	const ship = use(getShip(shipName, 3000))
-	// 🐨 move this above the use call, and swap from ship.name to shipName
-	// 🐨 call imgSrc with shipImgSrc (make sure it's before the use call!)
-
-	console.log(`ShipDetails component rendering`)
-
+	const ship = use(getShip(shipName))
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
@@ -228,12 +221,6 @@ function ShipError({ shipName }: { shipName: string }) {
 }
 
 function ShipImg(props: React.ComponentProps<'img'>) {
-	console.log(`ShipImg component logic start`)
-
-	console.log(`img props = ${JSON.stringify(props, null, 2)}`)
-
-	console.log(`ShipImg component rendering`)
-
 	return (
 		<ErrorBoundary fallback={<img {...props} />} key={props.src}>
 			<Suspense fallback={<img {...props} src={shipFallbackSrc} />}>
@@ -244,12 +231,7 @@ function ShipImg(props: React.ComponentProps<'img'>) {
 }
 
 function Img({ src = '', ...props }: React.ComponentProps<'img'>) {
-	console.log(`Img component logic start`)
-
 	src = use(imgSrc(src))
-
-	console.log(`Img component rendering`)
-	
 	return <img src={src} {...props} />
 }
 
