@@ -34,11 +34,7 @@ function App() {
 						<div className="search">
 							<ShipSearch
 								onSelection={(selection) => {
-									startTransition(() => {
-										console.log(`startTransition() li button clicked`)
-
-										setShipName(selection);
-									})
+									startTransition(() => setShipName(selection))
 								}}
 							/>
 						</div>
@@ -65,27 +61,9 @@ function ShipSearch({
 }: {
 	onSelection: (shipName: string) => void
 }) {
-	console.log(`ShipSearch component logic start`)
-
 	const [search, setSearch] = useState('')
-
-	console.log(`search = ${search}`)
-
-	// 🐨 remove the useTransition
-	// const [isTransitionPending, startTransition] = useTransition()
-	// 🐨 call useDeferredValue with the search
 	const deferredSearch = useDeferredValue(search)
-
-	console.log(`deferredSearch = ${deferredSearch}`)
-
-	// 🐨 update the argument passed to useSpinDelay to be search !== deferredSearch
-	const isPending = useSpinDelay(search !== deferredSearch, {
-		delay: 300,
-		minDuration: 350,
-	})
-
-	console.log(`ShipSearch component rendering`)
-
+	const isPending = useSpinDelay(search !== deferredSearch)
 	return (
 		<>
 			<div>
@@ -94,12 +72,7 @@ function ShipSearch({
 					type="search"
 					value={search}
 					onChange={(event) => {
-						// 🐨 remove the startTransition wrapper here
-						// startTransition(() =>
-						// {
-							console.log(`onChange() search input called for ${event.currentTarget.value}`)
-							setSearch(event.currentTarget.value)
-						// })
+						setSearch(event.currentTarget.value)
 					}}
 				/>
 			</div>
@@ -112,7 +85,6 @@ function ShipSearch({
 			>
 				<ul style={{ opacity: isPending ? 0.6 : 1 }}>
 					<Suspense fallback={<SearchResultsFallback />}>
-						{/* 🐨 pass the deferredSearch here */}
 						<SearchResults search={deferredSearch} onSelection={onSelection} />
 					</Suspense>
 				</ul>
@@ -122,10 +94,6 @@ function ShipSearch({
 }
 
 function SearchResultsFallback() {
-	console.log(`SearchResultsFallback component logic start`)
-	
-	console.log(`SearchResultsFallback component rendering`)
-
 	return Array.from({ length: 12 }).map((_, i) => (
 		<li key={i}>
 			<button>
@@ -143,12 +111,7 @@ function SearchResults({
 	search: string
 	onSelection: (shipName: string) => void
 }) {
-	console.log(`SearchResults component logic start`)
-	
 	const shipResults = use(searchShips(search))
-
-	console.log(`SearchResults component rendering`)
-
 	return shipResults.ships.map((ship) => (
 		<li key={ship.name}>
 			<button onClick={() => onSelection(ship.name)}>
@@ -165,17 +128,20 @@ function SearchResults({
 function ShipDetails({ shipName }: { shipName: string }) {
 	console.log(`ShipDetails component logic start`)
 
-	const ship = use(getShip(shipName))
+	const shipImgSrc = getImageUrlForShip(shipName, { size: 2000 })
+	void imgSrc(shipImgSrc)
+
+	// 🦉 play with the delay to see how it affects the loading experience
+	const ship = use(getShip(shipName, 3000))
+	// 🐨 move this above the use call, and swap from ship.name to shipName
+	// 🐨 call imgSrc with shipImgSrc (make sure it's before the use call!)
 
 	console.log(`ShipDetails component rendering`)
 
 	return (
 		<div className="ship-info">
 			<div className="ship-info__img-wrapper">
-				<ShipImg
-					src={getImageUrlForShip(ship.name, { size: 200 })}
-					alt={ship.name}
-				/>
+				<ShipImg src={shipImgSrc} alt={ship.name} />
 			</div>
 			<section>
 				<h2>
@@ -283,7 +249,7 @@ function Img({ src = '', ...props }: React.ComponentProps<'img'>) {
 	src = use(imgSrc(src))
 
 	console.log(`Img component rendering`)
-
+	
 	return <img src={src} {...props} />
 }
 
